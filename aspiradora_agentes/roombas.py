@@ -2,13 +2,20 @@ import agentpy as ap
 import numpy as np
 import random
 
+def countDirtyCells(grid):
+    dirtyCells = 0
+    for row in grid:
+        for col in row:
+            if col == 1: dirtyCells += 1
+    return dirtyCells
+
 class Roomba(ap.Agent):
     def setup(self):
         self.location = (0, 0)
+        self.movements = 0
 
     def cleanCell(self):
         if (self.model.floors[self.location[0]][self.location[1]] == 1):
-            print('\n \tCLEANED CELL')
             self.model.floors[self.location[0]][self.location[1]] = 0
             self.model.cleanedCells = self.model.cleanedCells + 1
 
@@ -25,7 +32,10 @@ class Roomba(ap.Agent):
         if direction == 5: self.grid.move_to(self, (self.location[0] - 1, self.location[1] - 1)) # left upward diagonal
         if direction == 6: self.grid.move_to(self, (self.location[0] + 1, self.location[1] + 1)) # right downward diagonal
         if direction == 7: self.grid.move_to(self, (self.location[0] + 1, self.location[1] - 1)) # left downward diagonal
+        
+        if self.location != self.grid.positions[self]: self.movements += 1
         self.location = self.grid.positions[self]
+
 
 class RoombaModel(ap.Model):    
     def setup(self):
@@ -40,7 +50,10 @@ class RoombaModel(ap.Model):
         self.floors = np.random.choice([0, 1], size=(row, columns), p=[ratioCleanCells, ratioDirtyCells])
         self.cleanedCells = 0
         self.grid.add_agents(self.agents)
-        print(self.floors)
+        
+        self.dirtyCells = countDirtyCells(self.floors)
+        
+        print('\n', self.floors, '\n')
 
     def step(self):
         self.agents.cleanCell()
@@ -52,9 +65,24 @@ class RoombaModel(ap.Model):
 
     def end(self):
         print('\nFINAL FLOOR => \n', self.floors)
-        self.report('cleaned_cells', self.cleanedCells)
+        dirtyCellsReamining = countDirtyCells(self.floors)
+        if self.dirtyCells != 0:
+            percentageDirtyCells = (dirtyCellsReamining * 100) / self.dirtyCells
+        else:
+            percentageDirtyCells = 0
+        self.report('cleaned_cells', percentageDirtyCells)
+        self.report('agents', self.agents.movements)
 
 # RUN SIMULATION
+def printResult(results):
+    agentNum = 1
+    print('\n\n Movements => ')
+    for agent in results.reporters.agents[0]:
+        print('Agent ', agentNum, ': ', agent)
+        agentNum += 1
+    print('% DIRTY CELLS REMAINING', results.reporters.cleaned_cells)
+
+
 parameters = {
     'row': 5,
     'columns': 5,
@@ -65,5 +93,4 @@ parameters = {
 
 model = RoombaModel(parameters)
 results = model.run()
-
-print('\n\n', results.reporters)
+printResult(results)
