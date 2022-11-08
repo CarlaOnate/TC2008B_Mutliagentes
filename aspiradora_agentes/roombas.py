@@ -11,7 +11,7 @@ def countDirtyCells(grid):
 
 class Roomba(ap.Agent):
     def setup(self):
-        self.location = (0, 0)
+        self.location = (1, 1)
         self.movements = 0
 
     def cleanCell(self):
@@ -41,37 +41,37 @@ class RoombaModel(ap.Model):
     def setup(self):
         row = self.p.row
         columns = self.p.columns
-
         ratioDirtyCells = self.p.ratio_dirty_cells / 100
         ratioCleanCells = (1 - ratioDirtyCells)
-
         self.agents = ap.AgentList(self, self.p.agents, Roomba)
         self.grid = ap.Grid(self, (row, columns))
         self.floors = np.random.choice([0, 1], size=(row, columns), p=[ratioCleanCells, ratioDirtyCells])
         self.cleanedCells = 0
+        self.totalSteps = 0
         self.grid.add_agents(self.agents)
-        
         self.dirtyCells = countDirtyCells(self.floors)
         
-        print('\n', self.floors, '\n')
-
     def step(self):
         self.agents.cleanCell()
         self.agents.move()
+        self.totalSteps += 1
 
     def update(self):
         if not (1 in self.floors):
             self.stop()
 
     def end(self):
-        print('\nFINAL FLOOR => \n', self.floors)
         dirtyCellsReamining = countDirtyCells(self.floors)
         if self.dirtyCells != 0:
             percentageDirtyCells = (dirtyCellsReamining * 100) / self.dirtyCells
         else:
             percentageDirtyCells = 0
         self.report('cleaned_cells', percentageDirtyCells)
-        self.report('agents', self.agents.movements)
+        self.report('num_agents', self.agents.__len__())
+        self.report('min_moves', min(self.agents.movements))
+        self.report('max_moves', max(self.agents.movements))
+        self.report('total_steps', self.totalSteps)
+        self.report('size', str(self.p.row) + ' * ' + str(self.p.columns))
 
 # RUN SIMULATION
 def printResult(results):
@@ -82,15 +82,137 @@ def printResult(results):
         agentNum += 1
     print('% DIRTY CELLS REMAINING', results.reporters.cleaned_cells)
 
-
-parameters = {
-    'row': 5,
-    'columns': 5,
-    'agents': 5,
-    'ratio_dirty_cells': 50,
+variedParameters = {
+    'row': ap.IntRange(5, 40),
+    'columns': ap.IntRange(5, 40),
+    'agents': ap.IntRange(1, 20),
+    'ratio_dirty_cells': ap.IntRange(10, 100),
     'steps': 100
 }
 
-model = RoombaModel(parameters)
+fixedParams = {
+    'row': 10,
+    'columns': 10,
+    'agents': 5,
+    'ratio_dirty_cells': 20,
+    'steps': 100
+}
+
+""" model = RoombaModel(fixedParams)
 results = model.run()
-printResult(results)
+printResult(results) """
+
+# FIRST SIMULATION:
+# Size remains and ratio while number of agents varies
+
+def runSimulation_1():
+    print('\n------------- SIMULATION 1 -----------------')
+    parameters = {
+        'row': 20,
+        'columns': 20,
+        'agents': ap.IntRange(1, 20),
+        'ratio_dirty_cells': 20,
+        'steps': 5000
+    }
+    sample = ap.Sample(parameters, n=5)
+    exp = ap.Experiment(RoombaModel, sample, iterations=10)
+    results1 = exp.run()
+    results1.save()
+    results1 = ap.DataDict.load('RoombaModel')
+    print(results1.reporters, '\n\n')
+
+    # DATA SUMMARY
+    averageCellsCleaned = sum(results1.reporters['cleaned_cells']) / results1.reporters['cleaned_cells'].__len__()
+    averageMinMoves = sum(results1.reporters['min_moves']) / results1.reporters['min_moves'].__len__()
+    averageMaxMoves = sum(results1.reporters['max_moves']) / results1.reporters['max_moves'].__len__()
+    print('AVERAGE DIRTY CELLS REMAINING => ', averageCellsCleaned)
+    print('AVERAGE MIN MOVEMENTS => ', averageMinMoves)
+    print('AVERAGE MAX MOVEMENTS => ', averageMaxMoves)
+    #     print('TOTAL_STEPS', results1.reporters['total_steps'])
+    print('\n\n')
+
+def runSimulation_2():
+    print('\n------------- SIMULATION 2 -----------------')
+    parameters = {
+        'row': 60,
+        'columns': 60,
+        'agents': ap.IntRange(1, 20),
+        'ratio_dirty_cells': 20,
+        'steps': 5000
+    }
+    sample = ap.Sample(parameters, n=5)
+    exp = ap.Experiment(RoombaModel, sample, iterations=10)
+    results1 = exp.run()
+    results1.save()
+    results1 = ap.DataDict.load('RoombaModel')
+    print(results1.reporters, '\n\n')
+
+    # DATA SUMMARY
+    averageCellsCleaned = sum(results1.reporters['cleaned_cells']) / results1.reporters['cleaned_cells'].__len__()
+    averageMinMoves = sum(results1.reporters['min_moves']) / results1.reporters['min_moves'].__len__()
+    averageMaxMoves = sum(results1.reporters['max_moves']) / results1.reporters['max_moves'].__len__()
+    print('AVERAGE DIRTY CELLS REMAINING => ', averageCellsCleaned)
+    print('AVERAGE MIN MOVEMENTS => ', averageMinMoves)
+    print('AVERAGE MAX MOVEMENTS => ', averageMaxMoves)
+    #     print('TOTAL_STEPS', results1.reporters['total_steps'])
+    print('\n\n')
+
+def runSimulation_3():
+    print('\n------------- SIMULATION 3 -----------------')
+    parameters = {
+        'row': 20,
+        'columns': 20,
+        'agents': ap.IntRange(1, 50),
+        'ratio_dirty_cells': 20,
+        'steps': 5000
+    }
+    sample = ap.Sample(parameters, n=5)
+    exp = ap.Experiment(RoombaModel, sample, iterations=10)
+    results1 = exp.run()
+    results1.save()
+    results1 = ap.DataDict.load('RoombaModel')
+    print(results1.reporters, '\n\n')
+
+    # DATA SUMMARY
+    averageCellsCleaned = sum(results1.reporters['cleaned_cells']) / results1.reporters['cleaned_cells'].__len__()
+    averageMinMoves = sum(results1.reporters['min_moves']) / results1.reporters['min_moves'].__len__()
+    averageMaxMoves = sum(results1.reporters['max_moves']) / results1.reporters['max_moves'].__len__()
+    print('AVERAGE DIRTY CELLS REMAINING => ', averageCellsCleaned)
+    print('AVERAGE MIN MOVEMENTS => ', averageMinMoves)
+    print('AVERAGE MAX MOVEMENTS => ', averageMaxMoves)
+    #     print('TOTAL_STEPS', results1.reporters['total_steps'])
+    print('\n\n')
+
+def runSimulation_4():
+    print('\n------------- SIMULATION 4 -----------------')
+    parameters = {
+        'row': 60,
+        'columns': 60,
+        'agents': ap.IntRange(1, 50),
+        'ratio_dirty_cells': 20,
+        'steps': 5000
+    }
+    sample = ap.Sample(parameters, n=5)
+    exp = ap.Experiment(RoombaModel, sample, iterations=10)
+    results1 = exp.run()
+    results1.save()
+    results1 = ap.DataDict.load('RoombaModel')
+    print(results1.reporters, '\n\n')
+
+    # DATA SUMMARY
+    averageCellsCleaned = sum(results1.reporters['cleaned_cells']) / results1.reporters['cleaned_cells'].__len__()
+    averageMinMoves = sum(results1.reporters['min_moves']) / results1.reporters['min_moves'].__len__()
+    averageMaxMoves = sum(results1.reporters['max_moves']) / results1.reporters['max_moves'].__len__()
+    print('AVERAGE DIRTY CELLS REMAINING => ', averageCellsCleaned)
+    print('AVERAGE MIN MOVEMENTS => ', averageMinMoves)
+    print('AVERAGE MAX MOVEMENTS => ', averageMaxMoves)
+    #     print('TOTAL_STEPS', results1.reporters['total_steps'])
+    print('\n\n')
+
+# RUN ALL SIMULATIONS
+print('\n \t -- EXPERIMENTOS CON AGENTES DE 1 A 20 -- \n')
+runSimulation_1()
+runSimulation_2()
+print('\n \t -- EXPERIMENTOS CON AGENTES DE 1 A 50 -- \n')
+runSimulation_3()
+runSimulation_4()
